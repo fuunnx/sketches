@@ -13,7 +13,7 @@ const settings = {
   duration: 3,
   playbackRate: "throttle",
   animate: true,
-  fps: 24,
+  fps: 12,
 };
 
 let params = new URLSearchParams(location.search);
@@ -92,12 +92,6 @@ function sketch(context) {
           interact(boid, other);
         }
       });
-
-      // const closest = findClosestTo(boid, boids);
-
-      // if (closest) {
-      //   interact(boid, closest);
-      // }
     });
   }
 
@@ -111,27 +105,6 @@ function sketch(context) {
       return false;
     }
     return true;
-  }
-
-  function findClosestTo(point, points) {
-    let closestSqrDistance = fov ** 2;
-    const closest = points.reduce((closer, other) => {
-      if (other === point) return closer;
-      if (!isViewing(point, other)) return closer;
-
-      const sqDistance = squareDistance(point, other);
-      if (sqDistance > closestSqrDistance) return closer;
-
-      const angleBetween = angle(point, other);
-      if (angleBetween > angleOfView / 2 || angleBetween < -(angleOfView / 2)) {
-        return closer;
-      }
-
-      closestSqrDistance = sqDistance;
-      return other;
-    });
-
-    return closest;
   }
 
   function interact(boid, other) {
@@ -159,16 +132,6 @@ function sketch(context) {
     // just right
     boid.angle = nudgeAngle(inertia, boid.angle, other.angle);
   }
-}
-
-function angleReflect(incidenceAngle, surfaceAngle) {
-  return normalizeAngle(surfaceAngle * 2 - incidenceAngle);
-}
-
-function normalizeAngle(angle) {
-  if (angle > 360) return angle - 360;
-  if (angle < -360) return angle + 360;
-  return angle;
 }
 
 function nudgeAngle(inertia, current, target) {
@@ -258,10 +221,6 @@ function squareDistance(point1, point2) {
   const x = Math.abs(point1.x - point2.x);
   const y = Math.abs(point1.y - point2.y);
   return x ** 2 + y ** 2;
-}
-
-function distance(point1, point2) {
-  return Math.sqrt(squareDistance(point1, point2));
 }
 
 function angle(c, e) {
