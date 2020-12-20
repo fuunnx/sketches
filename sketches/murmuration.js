@@ -13,7 +13,7 @@ const settings = {
   duration: 3,
   playbackRate: "throttle",
   animate: true,
-  fps: 12,
+  fps: 30,
 };
 
 let params = new URLSearchParams(location.search);
@@ -34,9 +34,9 @@ function sketch(context) {
   let origin = { x: context.width / 2, y: context.height / 2, z: 0 };
   let diameter = 8;
   let fov = 4;
-  let angleOfView = 30;
-  let boidSize = 0.8;
-  let baseSpeed = 0.2;
+  let angleOfView = 20;
+  let boidSize = 0.5;
+  let baseSpeed = 0.3;
   let count = 500;
   let inertia = 7;
   let rightSpot = 0.8;
@@ -45,8 +45,8 @@ function sketch(context) {
     return {
       x: origin.x + random(-diameter / 2, diameter / 2),
       y: origin.y + random(-diameter / 2, diameter / 2),
-      z: origin.z + random(-diameter / 2, diameter / 2),
-      speed: baseSpeed * random(0.9, 1.1),
+      z: origin.z + random(-diameter, diameter),
+      speed: baseSpeed * random(0.95, 1.05),
       angle: random(-360, 360),
       anglesCache: new Map(),
     };
@@ -73,11 +73,11 @@ function sketch(context) {
       boid.anglesCache = new Map();
     });
 
-    boids.forEach((boid) => {
+    boids.forEach((boid, index) => {
       let prevPos = { x: boid.x, y: boid.y, z: boid.z };
       move(boid);
 
-      boid.angle += Math.cos(playhead * 10) * 2;
+      boid.angle += Math[index % 2 ? "cos" : "sin"](playhead * 10) * 4;
 
       const sqrDistToOrigin = squareDistance(boid, origin);
       if (
