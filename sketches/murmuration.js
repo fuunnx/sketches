@@ -1,15 +1,7 @@
-/**
- * A Canvas2D + SVG Pen Plotter example of "Cubic Disarray"
- * (a recreation of an artwork by Georg Nees in 1968-71).
- *
- * @author Stephane Tombeur (https://github.com/stombeur)
- */
-
 const canvasSketch = require("canvas-sketch");
 const seedRandom = require("seed-random");
 const { perform, withHandler } = require("performative-ts");
 const { polylinesToSVG } = require("canvas-sketch-util/penplot");
-const { clamp } = require("canvas-sketch-util/math");
 
 const settings = {
   dimensions: "A4",
@@ -39,47 +31,70 @@ const random = (min, max) => getRandom() * (max - min) + min;
 canvasSketch(sketch, settings);
 
 function sketch(context) {
-  let origin = { x: context.width / 2, y: context.height / 2 };
-  let diameter = 7;
-  let fov = 1;
-  let influence = 1;
-  let maxAngle = 10;
-  let boidSize = 0.5;
-  let baseSpeed = 0.1;
+  let origin = { x: context.width / 2, y: context.height / 2, z: 0 };
+  let diameter = 8;
+  let fov = 4;
+  let angleOfView = 10;
+  let boidSize = 0.8;
+  let baseSpeed = 0.2;
   let count = 500;
+  let inertia = 5;
+  let rightSpot = 0.8;
 
   let boids = Array.from(Array(count), () => {
     return {
       x: origin.x + random(-diameter / 2, diameter / 2),
       y: origin.y + random(-diameter / 2, diameter / 2),
-      speed: baseSpeed,
-      angle: random(-180, 180),
+      z: origin.z + random(-diameter / 2, diameter / 2),
+      speed: baseSpeed * random(0.9, 1.1),
+      angle: random(-360, 360),
+      anglesCache: new Map(),
     };
   });
 
-  return ({ context, width, height, units, playhead }) => {
-    boids.forEach((boid, index) => {
+  return ({ context, width, height, units }) => {
+    boids.forEach((boid) => {
+      boid.anglesCache = new Map();
+    });
+
+    boids.forEach((boid) => {
+      let prevPos = { x: boid.x, y: boid.y };
       move(boid);
+
       const sqrDistToOrigin = squareDistance(boid, origin);
-      if (sqrDistToOrigin > diameter ** 2) {
-        boid.speed = -1 * boid.speed;
+      if (
+        sqrDistToOrigin > diameter ** 2 &&
+        squareDistance(prevPos, origin) < sqrDistToOrigin
+      ) {
+        // boid.speed = -1 * boid.speed;
+        boid.angle = nudgeAngle(0.5, boid.angle, boid.angle - 180);
+        // const angleBetween = angle(origin, boid);
+        // boid.angle = angleReflect(boid.angle, angleBetween - 90);
       }
 
       let closestSqrDistance = fov ** 2;
       const closest = boids.reduce((closer, other) => {
         if (other === boid) return closer;
-        if (!closer) return other;
+
         const sqDistance = squareDistance(boid, other);
         if (sqDistance < closestSqrDistance) {
+          const angleBetween = angle(boid, other);
+          if (
+            angleBetween > angleOfView / 2 ||
+            angleBetween < -(angleOfView / 2)
+          )
+            return closer;
+
           closestSqrDistance = sqDistance;
           return other;
         }
+
         return closer;
       });
-      if (!closest) return;
-      interact(boid, closest);
 
-      // boids.forEach((other) => interact(boid, other));
+      if (closest) {
+        interact(boid, closest);
+      }
     });
 
     const [canvas, lines] = draw(context, () => {
@@ -88,7 +103,8 @@ function sketch(context) {
       context.fillRect(0, 0, width, height);
 
       boids.forEach((boid) => {
-        drawLine(boid.x, boid.y, boidSize, boid.angle);
+        const size = boidSize * (1 + boid.z / diameter);
+        drawLine(boid.x, boid.y, size, boid.angle);
       });
     });
 
@@ -109,25 +125,37 @@ function sketch(context) {
     if (boid === other) return;
 
     const angleBetween = angle(boid, other);
-    if (angleBetween > 30 || angleBetween < -30) return;
-
     const distance = squareDistance(boid, other);
     if (distance > fov ** 2) {
       return;
     }
-    if (distance > (fov * 0.6) ** 2) {
+    if (distance > (fov * (0.5 + rightSpot / 2)) ** 2) {
       // too far
-      boid.angle = nudgeAngle(10, boid.angle, angleBetween);
+      boid.angle = nudgeAngle(inertia, boid.angle, boid.angle + angleBetween);
       return;
     }
-    if (distance < (fov * 0.4) ** 2) {
+    if (distance < (fov * (0.5 - rightSpot / 2)) ** 2) {
       // too close
-      boid.angle = nudgeAngle(10, boid.angle, -angleBetween);
+      boid.angle = nudgeAngle(
+        inertia / 10,
+        boid.angle,
+        boid.angle - angleBetween
+      );
       return;
     }
     // just right
-    boid.angle = nudgeAngle(10, boid.angle, other.angle);
+    boid.angle = nudgeAngle(inertia, boid.angle, other.angle);
   }
+}
+
+function angleReflect(incidenceAngle, surfaceAngle) {
+  return normalizeAngle(surfaceAngle * 2 - incidenceAngle);
+}
+
+function normalizeAngle(angle) {
+  if (angle > 360) return angle - 360;
+  if (angle < -360) return angle + 360;
+  return angle;
 }
 
 function nudgeAngle(inertia, current, target) {
@@ -163,7 +191,7 @@ function drawLine(cx, cy, width, angle) {
 
   context.beginPath();
   context.strokeStyle = "black";
-  context.lineWidth = 0.04;
+  context.lineWidth = 0.02;
   context.lineCap = "round";
 
   // draw line on context
@@ -212,9 +240,20 @@ function distance(point1, point2) {
 }
 
 function angle(c, e) {
+  if (c.anglesCache?.has(e)) {
+    return c.anglesCache.get(e);
+  }
+  if (e.anglesCache?.has(c)) {
+    return e.anglesCache.get(c);
+  }
+
   var dy = e.y - c.y;
   var dx = e.x - c.x;
   var theta = Math.atan2(dy, dx); // range (-PI, PI]
   theta *= 180 / Math.PI; // rads to degs, range (-180, 180]
+
+  c.anglesCache && c.anglesCache.set(e, theta);
+  e.anglesCache && e.anglesCache.set(c, -theta);
+
   return theta;
 }
