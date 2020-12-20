@@ -1,7 +1,7 @@
 const canvasSketch = require("canvas-sketch");
 const seedRandom = require("seed-random");
 const { perform, withHandler } = require("performative-ts");
-const { polylinesToSVG } = require("canvas-sketch-util/penplot");
+const { pathsToSVG } = require("canvas-sketch-util/penplot");
 
 const settings = {
   dimensions: "A4",
@@ -34,11 +34,11 @@ function sketch(context) {
   let origin = { x: context.width / 2, y: context.height / 2, z: 0 };
   let diameter = 8;
   let fov = 4;
-  let angleOfView = 10;
+  let angleOfView = 30;
   let boidSize = 0.8;
   let baseSpeed = 0.2;
   let count = 500;
-  let inertia = 5;
+  let inertia = 7;
   let rightSpot = 0.8;
 
   let boids = Array.from(Array(count), () => {
@@ -52,52 +52,11 @@ function sketch(context) {
     };
   });
 
-  return ({ context, width, height, units }) => {
-    boids.forEach((boid) => {
-      boid.anglesCache = new Map();
-    });
+  return (renderParams) => {
+    const { context, width, height, playhead } = renderParams;
+    update({ playhead });
 
-    boids.forEach((boid) => {
-      let prevPos = { x: boid.x, y: boid.y };
-      move(boid);
-
-      const sqrDistToOrigin = squareDistance(boid, origin);
-      if (
-        sqrDistToOrigin > diameter ** 2 &&
-        squareDistance(prevPos, origin) < sqrDistToOrigin
-      ) {
-        // boid.speed = -1 * boid.speed;
-        boid.angle = nudgeAngle(0.5, boid.angle, boid.angle - 180);
-        // const angleBetween = angle(origin, boid);
-        // boid.angle = angleReflect(boid.angle, angleBetween - 90);
-      }
-
-      let closestSqrDistance = fov ** 2;
-      const closest = boids.reduce((closer, other) => {
-        if (other === boid) return closer;
-
-        const sqDistance = squareDistance(boid, other);
-        if (sqDistance < closestSqrDistance) {
-          const angleBetween = angle(boid, other);
-          if (
-            angleBetween > angleOfView / 2 ||
-            angleBetween < -(angleOfView / 2)
-          )
-            return closer;
-
-          closestSqrDistance = sqDistance;
-          return other;
-        }
-
-        return closer;
-      });
-
-      if (closest) {
-        interact(boid, closest);
-      }
-    });
-
-    const [canvas, lines] = draw(context, () => {
+    return draw(renderParams, () => {
       // white background
       context.fillStyle = "white";
       context.fillRect(0, 0, width, height);
@@ -107,19 +66,73 @@ function sketch(context) {
         drawLine(boid.x, boid.y, size, boid.angle);
       });
     });
-
-    return [
-      canvas,
-      {
-        data: polylinesToSVG(lines, {
-          width,
-          height,
-          units,
-        }),
-        extension: ".svg",
-      },
-    ];
   };
+
+  function update({ playhead }) {
+    boids.forEach((boid) => {
+      boid.anglesCache = new Map();
+    });
+
+    boids.forEach((boid) => {
+      let prevPos = { x: boid.x, y: boid.y, z: boid.z };
+      move(boid);
+
+      boid.angle += Math.cos(playhead * 10) * 2;
+
+      const sqrDistToOrigin = squareDistance(boid, origin);
+      if (
+        sqrDistToOrigin > diameter ** 2 &&
+        squareDistance(prevPos, origin) < sqrDistToOrigin
+      ) {
+        boid.angle = boid.angle + random(-90, 0);
+        boid.speed *= -1;
+      }
+      boids.forEach((other) => {
+        if (isViewing(boid, other)) {
+          interact(boid, other);
+        }
+      });
+
+      // const closest = findClosestTo(boid, boids);
+
+      // if (closest) {
+      //   interact(boid, closest);
+      // }
+    });
+  }
+
+  function isViewing(point, target) {
+    const sqDistance = squareDistance(point, target);
+    if (sqDistance > fov ** 2) {
+      return false;
+    }
+    const angleBetween = angle(point, target);
+    if (angleBetween > angleOfView / 2 || angleBetween < -(angleOfView / 2)) {
+      return false;
+    }
+    return true;
+  }
+
+  function findClosestTo(point, points) {
+    let closestSqrDistance = fov ** 2;
+    const closest = points.reduce((closer, other) => {
+      if (other === point) return closer;
+      if (!isViewing(point, other)) return closer;
+
+      const sqDistance = squareDistance(point, other);
+      if (sqDistance > closestSqrDistance) return closer;
+
+      const angleBetween = angle(point, other);
+      if (angleBetween > angleOfView / 2 || angleBetween < -(angleOfView / 2)) {
+        return closer;
+      }
+
+      closestSqrDistance = sqDistance;
+      return other;
+    });
+
+    return closest;
+  }
 
   function interact(boid, other) {
     if (boid === other) return;
@@ -162,7 +175,9 @@ function nudgeAngle(inertia, current, target) {
   return (current * inertia + target) / (inertia + 1);
 }
 
-function draw(context, renderFunction) {
+function draw(params, renderFunction) {
+  const { context, width, height, units } = params;
+
   let lines = [];
 
   withHandler(
@@ -177,7 +192,17 @@ function draw(context, renderFunction) {
     renderFunction
   );
 
-  return [context.canvas, lines];
+  return [
+    context.canvas,
+    {
+      data: pathsToSVG(lines, {
+        width,
+        height,
+        units,
+      }),
+      extension: ".svg",
+    },
+  ];
 }
 
 // draw a square in a single line
@@ -200,7 +225,7 @@ function drawLine(cx, cy, width, angle) {
   context.stroke();
 
   // draw line for svg polylines
-  // perform("pushLine", [startXY, endXY]);
+  perform("pushLine", [startXY, endXY]);
 }
 
 // rotate [x,y] around the center [cx, cy] with angle in degrees
