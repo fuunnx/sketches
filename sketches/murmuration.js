@@ -13,7 +13,7 @@ const settings = {
   duration: 3,
   playbackRate: "throttle",
   animate: true,
-  fps: 30,
+  fps: 10,
 };
 
 let params = new URLSearchParams(location.search);
@@ -35,9 +35,9 @@ function sketch(context) {
   let diameter = 8;
   let fov = 4;
   let angleOfView = 20;
-  let boidSize = 0.5;
+  let boidSize = 0.25;
   let baseSpeed = 0.3;
-  let count = 500;
+  let count = 1000;
   let inertia = 7;
   let rightSpot = 0.8;
 
@@ -138,6 +138,7 @@ function nudgeAngle(inertia, current, target) {
   return (current * inertia + target) / (inertia + 1);
 }
 
+let history = [];
 function draw(params, renderFunction) {
   const { context, width, height, units } = params;
 
@@ -155,8 +156,9 @@ function draw(params, renderFunction) {
     renderFunction
   );
 
+  history.push(lines);
   return [
-    context.canvas,
+    // context.canvas,
     {
       data: pathsToSVG(lines, {
         width,
@@ -165,7 +167,15 @@ function draw(params, renderFunction) {
       }),
       extension: ".svg",
     },
-  ];
+    history.length > 2 && {
+      data: pathsToSVG(history.shift(), {
+        width,
+        height,
+        units,
+      }),
+      extension: ".svg",
+    },
+  ].filter(Boolean);
 }
 
 // draw a square in a single line
