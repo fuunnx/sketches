@@ -61,10 +61,17 @@ function sketch(context) {
       context.fillStyle = "white";
       context.fillRect(0, 0, width, height);
 
+      context.beginPath();
+      context.strokeStyle = "black";
+      context.lineWidth = 0.02;
+      context.lineCap = "round";
+
       boids.forEach((boid) => {
         const size = boidSize * (1 + boid.z / diameter);
         drawLine(boid.x, boid.y, size, boid.angle);
       });
+
+      context.stroke()
     });
   };
 
@@ -187,15 +194,9 @@ function drawLine(cx, cy, width, angle) {
   let startXY = rotate(cx, cy, cx - width / 2, cy, angle);
   let endXY = rotate(cx, cy, cx + width / 2, cy, angle);
 
-  context.beginPath();
-  context.strokeStyle = "black";
-  context.lineWidth = 0.02;
-  context.lineCap = "round";
-
   // draw line on context
   context.moveTo(...startXY);
   context.lineTo(...endXY);
-  context.stroke();
 
   // draw line for svg polylines
   perform("pushLine", [startXY, endXY]);
