@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "canvas-sketch sketch.ts --open -- -p [ tsify --noImplicitAny ]"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +15,16 @@
     "canvas-sketch-util": "^1.10.0",
     "performative-ts": "^2.0.0",
     "seed-random": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^14.14.37",
+    "@typescript-eslint/parser": "^4.20.0",
+    "eslint-config-prettier": "^8.1.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-plugin-react": "^7.23.1",
+    "prettier": "^2.2.1",
+    "tsify": "^5.0.2",
+    "typescript": "^4.2.3"
   }
 }

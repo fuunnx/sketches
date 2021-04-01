@@ -1,25 +1,25 @@
 module.exports = {
-    "env": {
-        "browser": true,
-        "es6": true
+  env: {
+    browser: true,
+    es2021: true,
+  },
+  extends: [
+    "plugin:react/recommended",
+    "standard",
+    "plugin:prettier/recommended",
+  ],
+  parserOptions: {
+    ecmaFeatures: {
+      jsx: true,
     },
-    "extends": "eslint:recommended",
-    "rules": {
-        "indent": [
-            "error",
-            "tab"
-        ],
-        "linebreak-style": [
-            "error",
-            "unix"
-        ],
-        "quotes": [
-            "error",
-            "single"
-        ],
-        "semi": [
-            "error",
-            "never"
-        ]
-    }
-};
+    ecmaVersion: 2020,
+    sourceType: "module",
+  },
+  plugins: ["react"],
+  rules: {
+    "no-undef": "error",
+    "no-unused-vars": "warn",
+    "no-use-before-define": "off",
+    "react/react-in-jsx-scope": "off",
+  },
+}

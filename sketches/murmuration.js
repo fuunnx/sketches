@@ -13,7 +13,7 @@ const settings = {
   duration: 3,
   playbackRate: "throttle",
   animate: true,
-  fps: 10,
+  fps: 24,
 };
 
 let params = new URLSearchParams(location.search);
@@ -37,7 +37,7 @@ function sketch(context) {
   let angleOfView = 20;
   let boidSize = 0.25;
   let baseSpeed = 0.3;
-  let count = 1000;
+  let count = 100;
   let inertia = 7;
   let rightSpot = 0.8;
 
