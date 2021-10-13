@@ -1,6 +1,9 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "target": "es5",
     "lib": [
       "dom",
       "dom.iterable",
@@ -17,16 +20,14 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
-    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "baseUrl": "./sketches",
+    "baseUrl": "./sketches"
   },
   "include": [
     "./sketches",
-    "./libs",
+    "./libs"
   ]
 }
