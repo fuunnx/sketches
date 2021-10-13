@@ -19,15 +19,16 @@ const settings = {
 canvasSketch(sketch, settings)
 
 const WIDTH = 10
-const GRIDSIZE = 50
+const GRIDSIZE = 150
 const WAVE_LENGTH = 15
 const WAVE_HEIGHT = 1
-const ITERATION_COUNT = GRIDSIZE * 5
-const DECISION_PROBA = 0.5 / GRIDSIZE
+const ITERATION_COUNT = GRIDSIZE * 1
+const DECISION_PROBA = 1 / GRIDSIZE
 const DECISION_NUDGE = 2
 const CLOSE_PATH = false
 const DRAW_WAVES = true
 const DRAW_LINES = true
+const OPTIMIZE = false
 
 function Bezier(start, cp1, cp2, end) {
   return [start, cp1, cp2, end]
@@ -57,7 +58,7 @@ function sketch(context) {
     const center = [width / 2, height / 2]
 
     const svgLines = lines.map((line) => toSvg(line))
-    return renderPaths(svgLines, { ...renderParams, optimize: false })
+    return renderPaths(svgLines, { ...renderParams, optimize: OPTIMIZE })
 
     function toRelativeCoordinates([x, y]) {
       return [
